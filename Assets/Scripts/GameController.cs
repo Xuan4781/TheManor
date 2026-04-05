@@ -74,7 +74,54 @@ public class GameController : MonoBehaviour
     {
         storyText.text = "Generating story...";
         // will call chat
-        yield return null;
+       string prompt = $"Write a short spooky Identity V style scene. {c.characterName} is a {c.role} in {m.name}.";
+        string json = "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}]}";
+
+        UnityWebRequest req = new UnityWebRequest("https://api.openai.com/v1/chat/completions", "POST");
+        req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + openAIKey);
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            string response = req.downloadHandler.text;
+
+            string marker = "\"content\": \"";
+            int contentIndex = response.IndexOf(marker);
+            if (contentIndex != -1)
+            {
+                contentIndex += marker.Length;
+
+                int endIndex = contentIndex;
+                while (endIndex < response.Length)
+                {
+                    if (response[endIndex] == '\\')
+                    {
+                        endIndex += 2;
+                        continue;
+                    }
+                    if (response[endIndex] == '"')
+                        break;
+                    endIndex++;
+                }
+
+                if (endIndex < response.Length)
+                {
+                    string story = response.Substring(contentIndex, endIndex - contentIndex);
+                    story = story.Replace("\\n", "\n").Replace("\\\"", "\"");
+                    storyText.text = story;
+                    yield break;
+                }
+            }
+
+            storyText.text = "Parsing failed. Raw:\n" + response;
+        }
+        else
+        {
+            storyText.text = "Error: " + req.error + "\n" + req.downloadHandler.text;
+        }
     }
 
 }
