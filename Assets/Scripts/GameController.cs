@@ -20,5 +20,13 @@ public class Map
 
 public class GameController : MonoBehaviour
 {
-    
+    [Header("References")]
+    public Renderer worldScreen; 
+    public TMP_Text nameText;
+    public TMP_Text roleText;
+    public TMP_Text traitsText;
+    public TMP_Text storyText;
+
+    [Header("OpenAI Key")]
+    public string openAIKey = "KEY";
 }
