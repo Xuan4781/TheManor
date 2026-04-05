@@ -59,6 +59,7 @@ public class GameController : MonoBehaviour
         traitsText.text = c.traits;
 
         // generate a story later
+        StartCoroutine(GenerateStory(c, map));
     }
 
     IEnumerator LoadMap(string url)
@@ -67,6 +68,13 @@ public class GameController : MonoBehaviour
         yield return req.SendWebRequest();
         Texture tex = DownloadHandlerTexture.GetContent(req);
         worldScreen.material.mainTexture = tex;
+    }
+
+    IEnumerator GenerateStory(Character c, Map m)
+    {
+        storyText.text = "Generating story...";
+        // will call chat
+        yield return null;
     }
 
 }
