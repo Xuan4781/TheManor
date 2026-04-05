@@ -45,4 +45,28 @@ public class GameController : MonoBehaviour
         new Map{ name="China Town", imageUrl="https://static.wikia.nocookie.net/id5/images/6/66/Chinatown1.jpg/revision/latest/smart/width/40/height/30?cb=20240417014622"},
         new Map{ name="Darkwoods", imageUrl="https://static.wikia.nocookie.net/id5/images/8/85/Darkwoods2.jpg/revision/latest/smart/width/40/height/30?cb=20210711212827"}
     };
+
+    public void Reincarnate()
+    {
+        // RANdom Map
+        Map map = maps[Random.Range(0, maps.Length)];
+        StartCoroutine(LoadMap(map.imageUrl));
+
+        // Random Char
+        Character c = characters[Random.Range(0, characters.Length)];
+        nameText.text = c.characterName;
+        roleText.text = c.role;
+        traitsText.text = c.traits;
+
+        // generate a story later
+    }
+
+    IEnumerator LoadMap(string url)
+    {
+        UnityWebRequest req = UnityWebRequestTexture.GetTexture(url);
+        yield return req.SendWebRequest();
+        Texture tex = DownloadHandlerTexture.GetContent(req);
+        worldScreen.material.mainTexture = tex;
+    }
+
 }
