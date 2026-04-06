@@ -17,6 +17,13 @@ public class Map
     public string name;
 }
 
+[System.Serializable]
+public class GameData
+{
+    public Character[] characters;
+    public Map[] maps;
+}
+
 public class GameController : MonoBehaviour
 {
     [Header("References")]
@@ -28,24 +35,38 @@ public class GameController : MonoBehaviour
     [Header("OpenAI Key")]
     public string openAIKey = "";
 
-    [Header("Characters")]
-    public Character[] characters = new Character[]
-    {
-        new Character{ characterName="Ada", role="Survivor", traits="Psycologist"},
-        new Character{ characterName="Victor", role="Survivor", traits="Postman"},
-        new Character{ characterName="Jack", role="Hunter", traits="The Ripper"}
-    };
+    private Character[] characters;
+    private Map[] maps;
 
-    [Header("Maps")]
-    public Map[] maps = new Map[]
+    void Start()
     {
-        new Map{ name="Arms Factory"},
-        new Map{ name="China Town"},
-        new Map{ name="Darkwoods"}
-    };
+        LoadGameData();
+    }
+
+    void LoadGameData()
+    {
+        TextAsset jsonFile = Resources.Load<TextAsset>("gamedata");
+        if (jsonFile != null)
+        {
+            GameData data = JsonUtility.FromJson<GameData>(jsonFile.text);
+            characters = data.characters;
+            maps = data.maps;
+            Debug.Log("Game data loaded! Characters: " + characters.Length + " Maps: " + maps.Length);
+        }
+        else
+        {
+            Debug.LogError("gamedata.json not found in Resources folder!");
+        }
+    }
 
     public void Reincarnate()
     {
+        if (characters == null || maps == null)
+        {
+            Debug.LogError("Data not loaded yet!");
+            return;
+        }
+
         Map map = maps[Random.Range(0, maps.Length)];
 
         Character c = characters[Random.Range(0, characters.Length)];
