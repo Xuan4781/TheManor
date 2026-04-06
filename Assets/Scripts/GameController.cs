@@ -15,20 +15,18 @@ public class Character
 public class Map
 {
     public string name;
-    public string imageUrl;
 }
 
 public class GameController : MonoBehaviour
 {
     [Header("References")]
-    public Renderer worldScreen; 
     public TMP_Text nameText;
     public TMP_Text roleText;
     public TMP_Text traitsText;
-    public TMP_Text storyText;
+    public TMP_Text jokeText;
 
     [Header("OpenAI Key")]
-    public string openAIKey = "KEY";
+    public string openAIKey = "";
 
     [Header("Characters")]
     public Character[] characters = new Character[]
@@ -41,40 +39,32 @@ public class GameController : MonoBehaviour
     [Header("Maps")]
     public Map[] maps = new Map[]
     {
-        new Map{ name="Arms Factory", imageUrl="https://static.wikia.nocookie.net/id5/images/f/f5/D69d6822-c9a9-45c5-a976-b084d95a8fb4.jpg/revision/latest/smart/width/40/height/30?cb=20180613004334"},
-        new Map{ name="China Town", imageUrl="https://static.wikia.nocookie.net/id5/images/6/66/Chinatown1.jpg/revision/latest/smart/width/40/height/30?cb=20240417014622"},
-        new Map{ name="Darkwoods", imageUrl="https://static.wikia.nocookie.net/id5/images/8/85/Darkwoods2.jpg/revision/latest/smart/width/40/height/30?cb=20210711212827"}
+        new Map{ name="Arms Factory"},
+        new Map{ name="China Town"},
+        new Map{ name="Darkwoods"}
     };
 
     public void Reincarnate()
     {
-        // RANdom Map
         Map map = maps[Random.Range(0, maps.Length)];
-        StartCoroutine(LoadMap(map.imageUrl));
 
-        // Random Char
         Character c = characters[Random.Range(0, characters.Length)];
         nameText.text = c.characterName;
         roleText.text = c.role;
         traitsText.text = c.traits;
 
-        // generate a story later
-        StartCoroutine(GenerateStory(c, map));
+        StartCoroutine(GenerateJoke(c, map));
     }
 
-    IEnumerator LoadMap(string url)
+    IEnumerator GenerateJoke(Character c, Map m)
     {
-        UnityWebRequest req = UnityWebRequestTexture.GetTexture(url);
-        yield return req.SendWebRequest();
-        Texture tex = DownloadHandlerTexture.GetContent(req);
-        worldScreen.material.mainTexture = tex;
+        jokeText.text = "...";
+        string prompt = $"Write one single short funny in-character joke that {c.characterName}, a {c.role} with the trait '{c.traits}', would say while on the map '{m.name}' in Identity V. Just the joke, no explanation.";
+        yield return StartCoroutine(CallOpenAI(prompt, jokeText));
     }
 
-    IEnumerator GenerateStory(Character c, Map m)
+    IEnumerator CallOpenAI(string prompt, TMP_Text targetText)
     {
-        storyText.text = "Generating story...";
-        // will call chat
-       string prompt = $"Write a short spooky Identity V style scene. {c.characterName} is a {c.role} in {m.name}.";
         string json = "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}]}";
 
         UnityWebRequest req = new UnityWebRequest("https://api.openai.com/v1/chat/completions", "POST");
@@ -87,41 +77,34 @@ public class GameController : MonoBehaviour
         if (req.result == UnityWebRequest.Result.Success)
         {
             string response = req.downloadHandler.text;
-
             string marker = "\"content\": \"";
             int contentIndex = response.IndexOf(marker);
+
             if (contentIndex != -1)
             {
                 contentIndex += marker.Length;
-
                 int endIndex = contentIndex;
+
                 while (endIndex < response.Length)
                 {
-                    if (response[endIndex] == '\\')
-                    {
-                        endIndex += 2;
-                        continue;
-                    }
-                    if (response[endIndex] == '"')
-                        break;
+                    if (response[endIndex] == '\\') { endIndex += 2; continue; }
+                    if (response[endIndex] == '"') break;
                     endIndex++;
                 }
 
                 if (endIndex < response.Length)
                 {
-                    string story = response.Substring(contentIndex, endIndex - contentIndex);
-                    story = story.Replace("\\n", "\n").Replace("\\\"", "\"");
-                    storyText.text = story;
+                    string result = response.Substring(contentIndex, endIndex - contentIndex);
+                    targetText.text = result.Replace("\\n", "\n").Replace("\\\"", "\"");
                     yield break;
                 }
             }
 
-            storyText.text = "Parsing failed. Raw:\n" + response;
+            targetText.text = "Parsing failed.";
         }
         else
         {
-            storyText.text = "Error: " + req.error + "\n" + req.downloadHandler.text;
+            targetText.text = "Error: " + req.error;
         }
     }
-
 }
